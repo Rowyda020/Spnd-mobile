@@ -70,6 +70,8 @@ export default function HomeScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      queryClient.invalidateQueries({ queryKey: ['monthlyExpensesTotal'] });
+      queryClient.invalidateQueries({ queryKey: ['monthlyExpensesTotal'] }); // ✨ Add this line!
       Alert.alert('Success', 'Expense added successfully!');
       resetForm();
       refreshUser();
@@ -84,22 +86,25 @@ export default function HomeScreen() {
     expensesLoading ||
     incomesLoading ||
     createExpenseMutation.isPending;  // ← Changed here
+  const { data: monthlyData, isLoading: isTotalLoading } = useQuery({
+    queryKey: ['monthlyExpensesTotal'],
+    queryFn: () => expenseService.getMonthlyTotal(),
+  });
+  const thisMonthTotal = monthlyData?.total || 0;
 
   // Calculate this month's spending
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
 
-  const thisMonthExpenses = expenses.filter((expense: any) => {
-    const expenseDate = new Date(expense.date);
-    return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-  });
+  // const thisMonthExpenses = expenses.filter((expense: any) => {
+  //   const expenseDate = new Date(expense.date);
+  //   return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+  // });
 
-  const thisMonthTotal = thisMonthExpenses.reduce((sum: number, exp: any) => sum + exp.amount, 0);
 
   // TODO: Calculate real last month total (you can fetch older data or use a separate query)
-  const lastMonthTotal = 1000; // Replace with real calculation later
+  const lastMonthTotal = 1000; // Keep as placeholder or add another API call
   const percentageChange = lastMonthTotal ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0;
-
   // Recent transactions (last 5)
   const recentTransactions = expenses.slice(-5).reverse();
 

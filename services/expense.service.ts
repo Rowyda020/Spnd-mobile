@@ -26,7 +26,10 @@ class ExpenseService {
     const response = await api.post('/create-expense', data);
     return response.data;
   }
-
+async getMonthlyTotal(): Promise<{ total: number }> {
+  const response = await api.get('/monthly-expenses');
+  return response.data;
+}
   // You'll need to add these endpoints to your backend
   async updateExpense(id: string, data: Partial<CreateExpenseData>): Promise<Expense> {
     const response = await api.put(`/expenses/${id}`, data);
