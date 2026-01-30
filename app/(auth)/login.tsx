@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,8 +28,8 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const { promptGoogleLogin, googleLoading, googleError, googleDisabled } = useGoogleAuth();
   const isAnyLoading = loading || googleLoading;
-  
-useEffect(() => {
+
+  useEffect(() => {
     if (googleError) {
       Alert.alert('Google Login Error', googleError);
     }
@@ -65,7 +65,7 @@ useEffect(() => {
     }
   };
 
-  
+
 
   return (
     <KeyboardAvoidingView
@@ -73,7 +73,7 @@ useEffect(() => {
       style={styles.container}
     >
       <LinearGradient
-        colors={[colors.primary, '#ffffff']}
+        colors={['#3b108b', '#ffffff']}
         style={styles.gradient}
       >
         <View style={styles.content}>
@@ -129,16 +129,16 @@ useEffect(() => {
             </View>
 
             <TouchableOpacity
-      style={[styles.googleButton, isAnyLoading && styles.buttonDisabled]}
-      disabled={isAnyLoading || googleDisabled}
-      onPress={handleGooglePress}
-    >
-      {isAnyLoading ? (
-        <ActivityIndicator color="#fff" />
-      ) : (
-        <Text style={styles.googleButtonText}>Continue with Google</Text>
-      )}
-    </TouchableOpacity>
+              style={[styles.googleButton, isAnyLoading && styles.buttonDisabled]}
+              disabled={isAnyLoading || googleDisabled}
+              onPress={handleGooglePress}
+            >
+              {isAnyLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
+              )}
+            </TouchableOpacity>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Don't have an account? </Text>

@@ -8,7 +8,7 @@ export default function AnalyticsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.content}>
         <Text style={styles.title}>Analytics</Text>
-        <Text style={styles.subtitle}>Coming soon - Income vs Expense charts</Text>
+        <Text style={styles.subtitle}>Coming soon... 👀</Text>
       </View>
     </SafeAreaView>
   );

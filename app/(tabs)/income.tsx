@@ -154,25 +154,39 @@ export default function IncomeScreen() {
         </TouchableOpacity>
     );
 
-    const renderIncomeItem = ({ item }: { item: any }) => (
-        <View style={styles.incomeItem}>
-            <View style={[styles.incomeIcon, { backgroundColor: getCategoryColor(item.category) }]}>
-                <Ionicons name={getCategoryIcon(item.category)} size={24} color="#fff" />
+    const renderIncomeItem = ({ item }: { item: any }) => {
+        // Determine which date to use and validate it
+        const rawDate = item.date || item.createdAt;
+        const dateObj = new Date(rawDate);
+        const isValidDate = !isNaN(dateObj.getTime());
+
+        const formattedDate = isValidDate
+            ? dateObj.toLocaleDateString('en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+            })
+            : 'Recent'; // Fallback text
+
+        return (
+            <View style={styles.incomeItem}>
+                <View style={[styles.incomeIcon, { backgroundColor: getCategoryColor(item.category) }]}>
+                    <Ionicons name={getCategoryIcon(item.category)} size={22} color="#fff" />
+                </View>
+
+                <View style={styles.incomeInfo}>
+                    <Text style={styles.incomeName} numberOfLines={1}>{item.source}</Text>
+                    <View style={styles.metaRow}>
+                        <Text style={styles.incomeCategory}>{item.category}</Text>
+                        <Text style={styles.dot}> • </Text>
+                        <Text style={styles.incomeDate}>{formattedDate}</Text>
+                    </View>
+                </View>
+
+                <Text style={styles.incomeAmount}>+${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
             </View>
-            <View style={styles.incomeInfo}>
-                <Text style={styles.incomeName}>{item.source}</Text>
-                <Text style={styles.incomeCategory}>{item.category}</Text>
-                <Text style={styles.incomeDate}>
-                    {new Date(item.date).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                    })}
-                </Text>
-            </View>
-            <Text style={styles.incomeAmount}>+${item.amount.toFixed(2)}</Text>
-        </View>
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -491,47 +505,49 @@ const styles = StyleSheet.create({
     incomeItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.card,
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.sm,
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        borderRadius: 18,
+        marginBottom: 12,
+        // Using a very light shadow instead of a border for a "neat" look
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 2,
     },
     incomeIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: borderRadius.md,
+        width: 44,
+        height: 44,
+        borderRadius: 22, // Perfect circle
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: spacing.md,
+        marginRight: 14,
     },
     incomeInfo: {
         flex: 1,
+        justifyContent: 'center',
     },
     incomeName: {
-        fontSize: fontSize.md,
-        fontWeight: fontWeight.semibold,
-        color: colors.text.primary,
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1A1C1E',
         marginBottom: 2,
     },
     incomeCategory: {
-        fontSize: fontSize.sm,
-        color: colors.text.secondary,
-        marginBottom: 2,
-        textTransform: 'capitalize',
+        fontSize: 13,
+        color: '#64748B', // Muted Slate
+        fontWeight: '500',
     },
     incomeDate: {
-        fontSize: fontSize.xs,
-        color: colors.text.light,
+        fontSize: 12,
+        color: '#94A3B8',
     },
     incomeAmount: {
-        fontSize: fontSize.lg,
-        fontWeight: fontWeight.bold,
-        color: colors.success,
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#10B981', // Your "Income Green"
+        marginLeft: 8,
     },
     addButton: {
         position: 'absolute',
@@ -623,6 +639,16 @@ const styles = StyleSheet.create({
     },
     categoriesContainer: {
         paddingVertical: spacing.xs,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+
+    dot: {
+        fontSize: 13,
+        color: '#CBD5E1',
+        marginHorizontal: 4,
     },
     categoryChip: {
         flexDirection: 'row',

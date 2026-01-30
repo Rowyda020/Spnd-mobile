@@ -57,7 +57,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <LinearGradient colors={[colors.primary, '#f9f8fd']} style={styles.gradient}>
+      <LinearGradient colors={['#3b108b', '#f9f8fd']} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             <View style={styles.header}>

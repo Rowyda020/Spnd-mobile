@@ -237,40 +237,49 @@ export default function HomeScreen() {
           <Ionicons name="chevron-forward" size={24} color={colors.text.secondary} />
         </TouchableOpacity>
 
-        {/* Recent Transactions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>See All</Text>
+            <TouchableOpacity onPress={() => router.push('/transactions')}>
+              <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
 
           {recentTransactions.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="receipt-outline" size={48} color={colors.text.light} />
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="receipt-outline" size={32} color={colors.text.light} />
+              </View>
               <Text style={styles.emptyText}>No transactions yet</Text>
               <Text style={styles.emptySubtext}>Start tracking your expenses</Text>
             </View>
           ) : (
-            recentTransactions.map((transaction: any) => (
-              <View key={transaction._id} style={styles.transactionItem}>
-                <View style={[styles.transactionIcon, { backgroundColor: getCategoryColor(transaction.category) }]}>
-                  <Ionicons name={getCategoryIcon(transaction.category)} size={20} color="#fff" />
-                </View>
-                <View style={styles.transactionInfo}>
-                  <Text style={styles.transactionName}>{transaction.description}</Text>
-                  <Text style={styles.transactionDate}>
-                    {new Date(transaction.date).toLocaleDateString('en-US', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+            recentTransactions.map((transaction: any) => {
+              // Date Safety Check
+              const dateObj = new Date(transaction.date || transaction.createdAt);
+              const formattedDate = !isNaN(dateObj.getTime())
+                ? dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+                : 'Recently';
+
+              return (
+                <View key={transaction._id} style={styles.transactionItem}>
+                  <View style={[styles.transactionIcon, { backgroundColor: getCategoryColor(transaction.category) }]}>
+                    <Ionicons name={getCategoryIcon(transaction.category)} size={20} color="#fff" />
+                  </View>
+
+                  <View style={styles.transactionInfo}>
+                    <Text style={styles.transactionName} numberOfLines={1}>
+                      {transaction.description}
+                    </Text>
+                    <Text style={styles.transactionDate}>{formattedDate} • {transaction.category}</Text>
+                  </View>
+
+                  <Text style={styles.transactionAmount}>
+                    -${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </Text>
                 </View>
-                <Text style={styles.transactionAmount}>-${transaction.amount.toFixed(2)}</Text>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
 
@@ -536,73 +545,89 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   section: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    marginTop: 24,
+    paddingHorizontal: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1C1E',
   },
-  seeAll: {
-    fontSize: fontSize.sm,
-    color: colors.primary,
-    fontWeight: fontWeight.medium,
+  seeAllText: {
+    color: '#FACC15', // Using your brand yellow for links
+    fontWeight: '700',
+    fontSize: 14,
   },
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.sm,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 10,
+    // Subtle lift instead of border
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   transactionIcon: {
     width: 40,
     height: 40,
-    borderRadius: borderRadius.full,
+    borderRadius: 20, // Perfectly round
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: 12,
   },
   transactionInfo: {
     flex: 1,
   },
   transactionName: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: colors.text.primary,
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1C1E',
   },
   transactionDate: {
-    fontSize: fontSize.xs,
-    color: colors.text.secondary,
+    fontSize: 12,
+    color: '#94A3B8', // Muted slate
+    marginTop: 2,
   },
   transactionAmount: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.error,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#EF4444', // Red for expenses
+    marginLeft: 8,
   },
+  // Empty State Styling
   emptyState: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
+    paddingVertical: 40,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+  },
+  emptyIconContainer: {
+    marginBottom: 12,
+    opacity: 0.5,
   },
   emptyText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: colors.text.secondary,
-    marginTop: spacing.md,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#475569',
   },
   emptySubtext: {
-    fontSize: fontSize.sm,
-    color: colors.text.light,
-    marginTop: spacing.xs,
+    fontSize: 13,
+    color: '#94A3B8',
+    marginTop: 4,
   },
   addButton: {
     position: 'absolute',

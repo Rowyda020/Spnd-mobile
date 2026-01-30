@@ -8,6 +8,8 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import sharedBudgetService, { CreateSharedBudgetData } from '@/services/sharedBudget.service';
@@ -105,103 +107,102 @@ export default function SharedBudgetScreen() {
   };
   const renderBudgetItem = ({ item }: { item: any }) => (
     <View style={styles.budgetCard}>
-      <View>
-        <Text style={styles.budgetName}>{item.budgetname}</Text>
-        <Text style={styles.budgetAmount}>${item.amount.toFixed(2)}</Text>
-        <Text style={styles.participants}>
-          {item.participants.length} participant{item.participants.length !== 1 ? 's' : ''}
-        </Text>
+      <View style={styles.cardTop}>
+        <View style={styles.infoSection}>
+          <Text style={styles.budgetNameText}>{item.budgetname}</Text>
+          <View style={styles.participantBadge}>
+            <Text style={styles.participantText}>👤 {item.participants.length} members</Text>
+          </View>
+        </View>
+        <Text style={styles.budgetAmountText}>${item.amount.toLocaleString()}</Text>
       </View>
 
       <TouchableOpacity
-        style={styles.contributeButton}
+        style={styles.outlineButton}
         onPress={() => router.push({
           pathname: '/addToBudget',
-          params: { budgetId: item._id, budgetName: item.budgetname } // optional: pass info
+          params: { budgetId: item._id, budgetName: item.budgetname }
         })}
       >
-        <Text style={styles.contributeText}>Contribute</Text>
+        <Text style={styles.outlineButtonText}>Contribute</Text>
       </TouchableOpacity>
     </View>
   );
   return (
-
     <View style={styles.container}>
-      <Text style={styles.title}>Shared Budgets</Text>
-      <Text style={styles.subtitle}>Manage money with others easily</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Shared Budgets</Text>
+        <Text style={styles.subtitle}>Collaborative spending tracking</Text>
+      </View>
 
-      {showForm ? (
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Budget name"
-            placeholderTextColor={colors.text.secondary}
-            value={budgetName}
-            onChangeText={setBudgetName}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Initial amount (optional)"
-            placeholderTextColor={colors.text.secondary}
-            value={initialAmount}
-            onChangeText={setInitialAmount}
-            keyboardType="numeric"
-          />
-
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Participant emails (comma-separated)"
-            placeholderTextColor={colors.text.secondary}
-            value={participants}
-            onChangeText={setParticipants}
-            multiline
-          />
-
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleCreateBudget}
-            disabled={createMutation.isPending}
-          >
-            {createMutation.isPending ? (
-              <ActivityIndicator color="#111" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Create Budget</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setShowForm(false)}
-          >
-            <Text style={styles.secondaryButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
+      {isLoading ? (
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
       ) : (
-        <>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowForm(true)}
-          >
-            <Text style={styles.addButtonText}>＋ New Shared Budget</Text>
-          </TouchableOpacity>
+        <FlatList
+          data={budgets}
+          renderItem={renderBudgetItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={<Text style={styles.emptyText}>No active shared budgets.</Text>}
+        />
+      )}
 
-          {isLoading || isFetching ? (
-            <ActivityIndicator size="large" color={colors.primary} />
-          ) : budgets.length === 0 ? (
-            <Text style={styles.emptyText}>No shared budgets yet</Text>
-          ) : (
-            <FlatList
-              data={budgets}
-              renderItem={renderBudgetItem}
-              keyExtractor={(item) => item._id}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
-        </>
+      {/* Modern FAB (Floating Action Button) */}
+      {!showForm && (
+        <TouchableOpacity style={styles.fab} onPress={() => setShowForm(true)}>
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
+      )}
+
+      {showForm && (
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>New Shared Budget</Text>
+
+              <TextInput
+                style={styles.modernInput}
+                placeholder="Budget Name (e.g. Trip to Paris)"
+                value={budgetName}
+                onChangeText={setBudgetName}
+              />
+
+              <TextInput
+                style={styles.modernInput}
+                placeholder="Initial Amount"
+                value={initialAmount}
+                onChangeText={setInitialAmount}
+                keyboardType="numeric"
+              />
+
+              <TextInput
+                style={[styles.modernInput, styles.textArea]}
+                placeholder="Emails (comma separated)"
+                value={participants}
+                onChangeText={setParticipants}
+                multiline
+              />
+
+              <TouchableOpacity
+                style={styles.mainActionBtn}
+                onPress={() => createMutation.mutate({
+                  budgetname: budgetName,
+                  amount: Number(initialAmount),
+                  participants: participants.split(',').map(p => p.trim())
+                })}
+              >
+                <Text style={styles.mainActionBtnText}>Create Budget</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => setShowForm(false)} style={styles.cancelBtn}>
+                <Text style={styles.cancelBtnText}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
       )}
     </View>
-
   );
 }
 
@@ -209,127 +210,161 @@ export default function SharedBudgetScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#FFFEF8',
+    backgroundColor: '#FBFBFE', // Ultra-clean subtle blue-white
   },
-
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-  },
-
-  subtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
-  },
-
-  form: {
-    backgroundColor: '#FFFBEB',
-    padding: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    color: '#111827',
-  },
-
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-
-  primaryButton: {
-    backgroundColor: '#FACC15',
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111',
-  },
-
-  secondaryButton: {
-    alignItems: 'center',
-    marginTop: 14,
-  },
-
-  secondaryButtonText: {
-    color: '#6B7280',
-    fontSize: 14,
-  },
-
-  addButton: {
-    backgroundColor: '#FACC15',
-    padding: 18,
-    borderRadius: 20,
-    alignItems: 'center',
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 80,
     marginBottom: 20,
   },
-
-  addButtonText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111',
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#1A1C1E',
+    letterSpacing: -0.8,
   },
-
-  emptyText: {
-    textAlign: 'center',
-    color: '#6B7280',
-    marginTop: 40,
+  subtitle: {
+    fontSize: 15,
+    color: '#6C757D',
+    marginTop: 4,
   },
-
+  listContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 100,
+  },
   budgetCard: {
-    backgroundColor: '#FFFBEB',
-    padding: 18,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
+  emptyText: {
 
-  budgetName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
+    textAlign: 'center',
 
-  budgetAmount: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#16A34A',
-    marginVertical: 6,
-  },
-
-  participants: {
     color: '#6B7280',
-    fontSize: 13,
-  },
 
-  contributeButton: {
-    marginTop: 20,
-    backgroundColor: '#5fa859',
-    paddingVertical: 20,
-    borderRadius: 50,
+    marginTop: 40,
+
+  },
+  cardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  budgetNameText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1A1C1E',
+  },
+  budgetAmountText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#00c954', // Deep green for money
+  },
+  participantBadge: {
+    backgroundColor: '#F1F3F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  participantText: {
+    fontSize: 11,
+    color: '#495057',
+    fontWeight: '600',
+  },
+  outlineButton: {
+    borderWidth: 1.5,
+    borderColor: '#FACC15',
+    borderRadius: 12,
+    paddingVertical: 10,
     alignItems: 'center',
   },
-
-  contributeText: {
-    color: '#fff',
-    fontWeight: '600',
+  outlineButtonText: {
+    color: '#1A1C1E',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    backgroundColor: '#FACC15',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FACC15',
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  fabIcon: {
+    fontSize: 30,
+    color: '#1A1C1E',
+    fontWeight: '300',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  formCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 24,
+  },
+  formTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 20,
+    color: '#1A1C1E',
+  },
+  modernInput: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  mainActionBtn: {
+    backgroundColor: '#FACC15',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  mainActionBtnText: {
+    fontWeight: '800',
+    fontSize: 16,
+    color: '#1A1C1E',
+  },
+  cancelBtn: {
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  cancelBtnText: {
+    color: '#ADB5BD',
+    fontSize: 14,
+  },
+  infoSection: {
+    flex: 1,           // Takes up the available space on the left
+    paddingRight: 10,  // Prevents text from hitting the amount
   },
 });

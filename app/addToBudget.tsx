@@ -17,8 +17,10 @@ import api from '@/services/api'; // ← use your auth-enabled axios instance
 import { useRouter } from 'expo-router';
 export default function AddBudgetScreen() {
     const [amount, setAmount] = useState('');
+    const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter()
+
     const handleAddBudget = async () => {
         const numAmount = Number(amount.trim());
 
@@ -116,7 +118,7 @@ export default function AddBudgetScreen() {
 
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => {/* router.back() or navigation.goBack() */ }}
+                        onPress={() => setShowForm(false)}
                     >
                         <Text style={styles.backButtonText}>Cancel</Text>
                     </TouchableOpacity>
