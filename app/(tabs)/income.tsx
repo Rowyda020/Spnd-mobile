@@ -65,7 +65,7 @@ export default function IncomeScreen() {
         onSuccess: (response) => {
             console.log('✅ Income created successfully:', response);
             queryClient.invalidateQueries({ queryKey: ['incomes'] });
-            refreshUser(); // Refresh user to get updated totalIncome
+            refreshUser();
             Alert.alert('Success', 'Income added successfully!');
             resetForm();
             setIsModalVisible(false);
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
         width: 40,
     },
     totalCard: {
-        backgroundColor: colors.income,
+        backgroundColor: '#061e55',
         marginHorizontal: spacing.lg,
         marginBottom: spacing.lg,
         padding: spacing.xl,
@@ -509,7 +509,6 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 18,
         marginBottom: 12,
-        // Using a very light shadow instead of a border for a "neat" look
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
@@ -546,7 +545,7 @@ const styles = StyleSheet.create({
     incomeAmount: {
         fontSize: 16,
         fontWeight: '800',
-        color: '#10B981', // Your "Income Green"
+        color: '#10B981',
         marginLeft: 8,
     },
     addButton: {
@@ -556,7 +555,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: borderRadius.full,
-        backgroundColor: colors.income,
+        backgroundColor: '#061e55',
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: colors.shadow,

@@ -1,188 +1,148 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, TextInput, TouchableOpacity, Alert, FlatList,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import sharedBudgetService, { CreateSharedBudgetData } from '@/services/sharedBudget.service';
-import { colors, spacing, borderRadius } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function SharedBudgetScreen() {
-  const { user, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
-  // Form state for creating budget
+
   const [budgetName, setBudgetName] = useState('');
   const [initialAmount, setInitialAmount] = useState('');
-  const [participants, setParticipants] = useState(''); // comma-separated emails
+  const [participants, setParticipants] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  // Fetch shared budgets (add backend endpoint if needed)
-  const { data: budgets = [], isLoading, isFetching } = useQuery({
+  const { data: budgets = [], isLoading } = useQuery({
     queryKey: ['sharedBudgets'],
     queryFn: () => sharedBudgetService.getMySharedBudgets(),
-    // enabled: !!user,     // optional: only run if logged in
   });
-
-  // In onSuccess of createMutation – force refetch
 
   const createMutation = useMutation({
     mutationFn: (data: CreateSharedBudgetData) => sharedBudgetService.createSharedBudget(data),
     onSuccess: () => {
       Alert.alert('Success', 'Shared budget created!');
       setShowForm(false);
-      resetForm();
+      setBudgetName('');
+      setInitialAmount('');
+      setParticipants('');
       refreshUser();
       queryClient.invalidateQueries({ queryKey: ['sharedBudgets'] });
     },
     onError: (error: any) => {
-      console.log('─'.repeat(60));
-      console.error('CREATE SHARED BUDGET FAILED');
-      console.error('Status:', error.response?.status);
-      console.error('Full response:', JSON.stringify(error.response?.data, null, 2));
-      // console.error('Sent payload:', payload); // add this
-      console.log('─'.repeat(60));
-
-      const errMsg =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        (error.response?.data?.errors?.map?.((e: any) => e.msg).join('\n')) ||
-        'Failed to create shared budget. Check console for details.';
-
+      const errMsg = error.response?.data?.error || 'Failed to create budget.';
       Alert.alert('Error', errMsg);
     },
   });
-  const [modalVisible, setModalVisible] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [loading, setLoading] = useState(false);
 
-
-  const contributeMutation = useMutation({
-    mutationFn: (data: { amount: number }) => sharedBudgetService.contributeToBudget(data),
-    onSuccess: () => {
-      Alert.alert('Success', 'Shared budget created!');
-      setShowForm(false);
-      resetForm();
-      refreshUser();
-      queryClient.invalidateQueries({ queryKey: ['sharedBudgets'] });
-      // Optional: refetch immediately if you want
-      queryClient.refetchQueries({ queryKey: ['sharedBudgets'] });
-    },
-    onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.error || 'Failed to contribute');
-    },
-  });
-
-  const handleCreateBudget = () => {
-    if (!budgetName || !participants) {
-      Alert.alert('Error', 'Budget name and at least one participant email are required');
-      return;
-    }
-
-    const participantEmails = participants.split(',').map(e => e.trim()).filter(Boolean);
-
-    const payload: CreateSharedBudgetData = {
-      budgetname: budgetName.trim(),
-      amount: initialAmount ? Number(initialAmount) : 0,
-      participants: participantEmails,
-    };
-
-    createMutation.mutate(payload);
-  };
-
-  const resetForm = () => {
-    setBudgetName('');
-    setInitialAmount('');
-    setParticipants('');
-  };
   const renderBudgetItem = ({ item }: { item: any }) => (
     <View style={styles.budgetCard}>
       <View style={styles.cardTop}>
         <View style={styles.infoSection}>
           <Text style={styles.budgetNameText}>{item.budgetname}</Text>
           <View style={styles.participantBadge}>
-            <Text style={styles.participantText}>👤 {item.participants.length} members</Text>
+            <Ionicons name="people" size={12} color={colors.text.light} />
+            <Text style={styles.participantText}>{item.participants.length} members</Text>
           </View>
         </View>
         <Text style={styles.budgetAmountText}>${item.amount.toLocaleString()}</Text>
       </View>
 
       <TouchableOpacity
-        style={styles.outlineButton}
+        style={styles.contributeButton}
         onPress={() => router.push({
           pathname: '/addToBudget',
           params: { budgetId: item._id, budgetName: item.budgetname }
         })}
       >
-        <Text style={styles.outlineButtonText}>Contribute</Text>
+        <Text style={styles.contributeButtonText}>Contribute</Text>
+        <Ionicons name="arrow-forward" size={16} color={colors.secondary} />
       </TouchableOpacity>
     </View>
   );
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Shared Budgets</Text>
-        <Text style={styles.subtitle}>Collaborative spending tracking</Text>
+      {/* Dark Header matching Login/Register */}
+      <SafeAreaView style={styles.headerContainer}>
+        <View style={styles.headerTextSection}>
+          <Text style={styles.headerTitle}>Shared Budgets</Text>
+          <Text style={styles.headerSubtitle}>Collaborative spending tracking</Text>
+        </View>
+      </SafeAreaView>
+
+      <View style={styles.formSheet}>
+        {isLoading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
+        ) : (
+          <FlatList
+            data={budgets}
+            renderItem={renderBudgetItem}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="wallet-membership" size={60} color={colors.border} />
+                <Text style={styles.emptyText}>No active shared budgets.</Text>
+              </View>
+            }
+          />
+        )}
       </View>
 
-      {isLoading ? (
-        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
-      ) : (
-        <FlatList
-          data={budgets}
-          renderItem={renderBudgetItem}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={<Text style={styles.emptyText}>No active shared budgets.</Text>}
-        />
-      )}
-
-      {/* Modern FAB (Floating Action Button) */}
+      {/* Floating Action Button - Golden */}
       {!showForm && (
         <TouchableOpacity style={styles.fab} onPress={() => setShowForm(true)}>
-          <Text style={styles.fabIcon}>+</Text>
+          <Ionicons name="add" size={32} color={colors.secondary} />
         </TouchableOpacity>
       )}
 
+      {/* Simplified Modal Overlay */}
       {showForm && (
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
             <View style={styles.formCard}>
               <Text style={styles.formTitle}>New Shared Budget</Text>
 
-              <TextInput
-                style={styles.modernInput}
-                placeholder="Budget Name (e.g. Trip to Paris)"
-                value={budgetName}
-                onChangeText={setBudgetName}
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Budget Name</Text>
+                <TextInput
+                  style={styles.modernInput}
+                  placeholder="Trip to Paris"
+                  value={budgetName}
+                  onChangeText={setBudgetName}
+                />
+              </View>
 
-              <TextInput
-                style={styles.modernInput}
-                placeholder="Initial Amount"
-                value={initialAmount}
-                onChangeText={setInitialAmount}
-                keyboardType="numeric"
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Initial Amount</Text>
+                <TextInput
+                  style={styles.modernInput}
+                  placeholder="0.00"
+                  value={initialAmount}
+                  onChangeText={setInitialAmount}
+                  keyboardType="numeric"
+                />
+              </View>
 
-              <TextInput
-                style={[styles.modernInput, styles.textArea]}
-                placeholder="Emails (comma separated)"
-                value={participants}
-                onChangeText={setParticipants}
-                multiline
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Participant Emails</Text>
+                <TextInput
+                  style={[styles.modernInput, styles.textArea]}
+                  placeholder="friend@email.com, friend2@email.com"
+                  value={participants}
+                  onChangeText={setParticipants}
+                  multiline
+                />
+              </View>
 
               <TouchableOpacity
                 style={styles.mainActionBtn}
@@ -206,165 +166,191 @@ export default function SharedBudgetScreen() {
   );
 }
 
-// Styles (add to your theme or here)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBFBFE', // Ultra-clean subtle blue-white
+    backgroundColor: colors.secondary,
   },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    marginBottom: 20,
+  headerContainer: {
+    paddingHorizontal: 25,
+    paddingTop: 20,
+    paddingBottom: 40,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#1A1C1E',
-    letterSpacing: -0.8,
+  headerTextSection: {
+    marginTop: 20,
   },
-  subtitle: {
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.card,
+  },
+  headerSubtitle: {
     fontSize: 15,
-    color: '#6C757D',
+    color: colors.text.light,
     marginTop: 4,
   },
+  formSheet: {
+    flex: 1,
+    backgroundColor: colors.card, // White background
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
+    paddingTop: 20,
+  },
   listContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 25,
     paddingBottom: 100,
+    paddingTop: 10,
   },
   budgetCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderRadius: 24,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    borderWidth: 1,
+    borderColor: colors.border,
+    // Subtle Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
-  },
-  emptyText: {
-
-    textAlign: 'center',
-
-    color: '#6B7280',
-
-    marginTop: 40,
-
   },
   cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  infoSection: {
+    flex: 1,
   },
   budgetNameText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1A1C1E',
-  },
-  budgetAmountText: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#00c954', // Deep green for money
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 6,
   },
   participantBadge: {
-    backgroundColor: '#F1F3F5',
-    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-    marginTop: 4,
+    borderRadius: 12,
     alignSelf: 'flex-start',
   },
   participantText: {
-    fontSize: 11,
-    color: '#495057',
+    fontSize: 12,
+    color: colors.text.secondary,
     fontWeight: '600',
+    marginLeft: 4,
   },
-  outlineButton: {
-    borderWidth: 1.5,
-    borderColor: '#FACC15',
-    borderRadius: 12,
-    paddingVertical: 10,
+  budgetAmountText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#10b91e',
+  },
+  contributeButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  outlineButtonText: {
-    color: '#1A1C1E',
+  contributeButtonText: {
+    color: colors.secondary,
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 15,
+    marginRight: 6,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  emptyText: {
+    color: colors.text.light,
+    marginTop: 10,
+    fontSize: 16,
   },
   fab: {
     position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#FACC15',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    bottom: 40,
+    right: 25,
+    backgroundColor: colors.primary,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FACC15',
+    shadowColor: colors.primary,
     shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  fabIcon: {
-    fontSize: 30,
-    color: '#1A1C1E',
-    fontWeight: '300',
+    shadowRadius: 12,
+    elevation: 10,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
     justifyContent: 'center',
-    padding: 24,
+    alignItems: 'center',
+    padding: 25,
   },
   formCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 24,
-    padding: 24,
+    backgroundColor: colors.card,
+    borderRadius: 30,
+    padding: 25,
+    width: '100%',
   },
   formTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
-    marginBottom: 20,
-    color: '#1A1C1E',
+    marginBottom: 25,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  inputGroup: {
+    marginBottom: 15,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text.light,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    marginLeft: 4,
   },
   modernInput: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 15,
-    marginBottom: 12,
+    backgroundColor: colors.background,
+    borderRadius: 15,
+    padding: 15,
+    fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: colors.border,
+    color: colors.text.primary,
   },
   textArea: {
-    height: 100,
+    height: 80,
     textAlignVertical: 'top',
   },
   mainActionBtn: {
-    backgroundColor: '#FACC15',
-    paddingVertical: 16,
-    borderRadius: 14,
+    backgroundColor: colors.primary,
+    paddingVertical: 18,
+    borderRadius: 20,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 15,
   },
   mainActionBtnText: {
     fontWeight: '800',
     fontSize: 16,
-    color: '#1A1C1E',
+    color: colors.secondary,
   },
   cancelBtn: {
     alignItems: 'center',
-    marginTop: 15,
+    marginTop: 20,
   },
   cancelBtnText: {
-    color: '#ADB5BD',
-    fontSize: 14,
-  },
-  infoSection: {
-    flex: 1,           // Takes up the available space on the left
-    paddingRight: 10,  // Prevents text from hitting the amount
+    color: colors.text.light,
+    fontWeight: '600',
+    fontSize: 15,
   },
 });

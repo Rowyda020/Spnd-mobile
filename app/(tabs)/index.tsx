@@ -71,7 +71,7 @@ export default function HomeScreen() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['incomes'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyExpensesTotal'] });
-      queryClient.invalidateQueries({ queryKey: ['monthlyExpensesTotal'] }); // ✨ Add this line!
+      queryClient.invalidateQueries({ queryKey: ['monthlyExpensesTotal'] });
       Alert.alert('Success', 'Expense added successfully!');
       resetForm();
       refreshUser();
@@ -85,7 +85,7 @@ export default function HomeScreen() {
   const isLoading =
     expensesLoading ||
     incomesLoading ||
-    createExpenseMutation.isPending;  // ← Changed here
+    createExpenseMutation.isPending;
   const { data: monthlyData, isLoading: isTotalLoading } = useQuery({
     queryKey: ['monthlyExpensesTotal'],
     queryFn: () => expenseService.getMonthlyTotal(),
@@ -95,12 +95,6 @@ export default function HomeScreen() {
   // Calculate this month's spending
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
-
-  // const thisMonthExpenses = expenses.filter((expense: any) => {
-  //   const expenseDate = new Date(expense.date);
-  //   return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-  // });
-
 
   // TODO: Calculate real last month total (you can fetch older data or use a separate query)
   const lastMonthTotal = 1000; // Keep as placeholder or add another API call
@@ -123,19 +117,19 @@ export default function HomeScreen() {
   };
   const createIncomeMutation = useMutation({
     mutationFn: (data) => {
-      console.log('MUTATION CALLED WITH DATA:', data);  // ← add this line
+      console.log('MUTATION CALLED WITH DATA:', data);
       return incomeService.createIncome(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes'] });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
 
-      refreshUser(); // ✅ updates totalIncome immediately
+      refreshUser();
       Alert.alert('Success', 'Income added!');
     },
   });
 
-  // Same for expense mutation
+
 
   const handleAddExpense = () => {
     if (!expenseData.amount || !expenseData.description || !expenseData.category) {
@@ -260,7 +254,6 @@ export default function HomeScreen() {
             </View>
           ) : (
             recentTransactions.map((transaction: any) => {
-              // Date Safety Check
               const dateObj = new Date(transaction.date || transaction.createdAt);
               const formattedDate = !isNaN(dateObj.getTime())
                 ? dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
@@ -292,7 +285,7 @@ export default function HomeScreen() {
         {/* Floating Add Button */}
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => setIsModalVisible(true)} // ← This opens the modal!
+          onPress={() => setIsModalVisible(true)}
         >
           <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
@@ -311,7 +304,7 @@ export default function HomeScreen() {
               <Text style={styles.modalTitle}>Add New Expense</Text>
               <TouchableOpacity
                 onPress={() => !createExpenseMutation.isPending && setIsModalVisible(false)}
-                disabled={createExpenseMutation.isPending}  // ← Changed
+                disabled={createExpenseMutation.isPending}
               >
                 <Ionicons name="close" size={24} color={colors.text.secondary} />
               </TouchableOpacity>
@@ -565,7 +558,7 @@ const styles = StyleSheet.create({
     color: '#1A1C1E',
   },
   seeAllText: {
-    color: '#FACC15', // Using your brand yellow for links
+    color: '#FACC15',
     fontWeight: '700',
     fontSize: 14,
   },
@@ -576,7 +569,6 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     marginBottom: 10,
-    // Subtle lift instead of border
     shadowColor: '#000',
     shadowOpacity: 0.03,
     shadowRadius: 5,
@@ -586,7 +578,7 @@ const styles = StyleSheet.create({
   transactionIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20, // Perfectly round
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -601,16 +593,16 @@ const styles = StyleSheet.create({
   },
   transactionDate: {
     fontSize: 12,
-    color: '#94A3B8', // Muted slate
+    color: '#94A3B8',
     marginTop: 2,
   },
   transactionAmount: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#EF4444', // Red for expenses
+    color: '#EF4444',
     marginLeft: 8,
   },
-  // Empty State Styling
+
   emptyState: {
     alignItems: 'center',
     paddingVertical: 40,

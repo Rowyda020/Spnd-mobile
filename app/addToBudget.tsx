@@ -1,224 +1,237 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    Alert,
-    StyleSheet,
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
+    View, Text, TextInput, TouchableOpacity, Alert, StyleSheet,
+    ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
+    Animated, SafeAreaView
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, fontSize, fontWeight } from '@/constants/theme';
-import api from '@/services/api'; // ← use your auth-enabled axios instance
-import { useRouter } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, spacing, borderRadius, fontSize } from '@/constants/theme';
+import api from '@/services/api';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+
 export default function AddBudgetScreen() {
     const [amount, setAmount] = useState('');
-    const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(false);
-    const router = useRouter()
+    const [focusAnim] = useState(new Animated.Value(0));
+
+    const router = useRouter();
+    const queryClient = useQueryClient();
+
+    const { budgetId, budgetName } = useLocalSearchParams<{
+        budgetId: string;
+        budgetName?: string;
+    }>();
 
     const handleAddBudget = async () => {
-        const numAmount = Number(amount.trim());
-
+        const numAmount = Number(amount.trim().replace(/,/g, ''));
         if (!amount.trim() || isNaN(numAmount) || numAmount <= 0) {
             Alert.alert('Invalid Amount', 'Please enter a positive number');
+            return;
+        }
+        if (!budgetId) {
+            Alert.alert('Error', 'No budget selected.');
             return;
         }
 
         try {
             setLoading(true);
+            await api.post('/adding-budget', { amount: numAmount, budgetId });
+            queryClient.invalidateQueries({ queryKey: ['sharedBudgets'] });
 
-            const response = await api.post('/adding-budget', { amount: numAmount });
-
-            Alert.alert('Success', 'Amount added to shared budget!', [{
-                text: 'OK', onPress: () => {
-                    setAmount('');
-                    router.back();           // ← This goes back to previous screen
-                },
-            }]);
-            setAmount('');
-            console.log('Updated budget:', response.data);
+            Alert.alert('Success!', `$${numAmount.toLocaleString()} added to ${budgetName || 'budget'}`, [
+                { text: 'Done', onPress: () => router.back() }
+            ]);
         } catch (error: any) {
-            console.log('Contribute error:', error.response?.data || error.message);
-
-            const msg =
-                error.response?.data?.error ||
-                error.response?.data?.message ||
-                'Failed to add amount. Please try again.';
-
-            Alert.alert('Error', msg);
+            Alert.alert('Oops', error.response?.data?.error || 'Failed to add amount.');
         } finally {
             setLoading(false);
         }
     };
 
+    const formatAmount = (value: string) => {
+        const numeric = value.replace(/[^0-9.]/g, '');
+        const parts = numeric.split('.');
+        if (parts.length > 2 || parts[1]?.length > 2) return value;
+        if (parts[0]) parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+    };
+
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-        >
-            <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.card}>
-                    <View style={styles.header}>
-                        <Ionicons name="people-outline" size={40} color={colors.primary} />
-                        <Text style={styles.title}>Contribute to Shared Budget</Text>
-                    </View>
-
-                    <Text style={styles.subtitle}>
-                        Add money to your shared budget. This amount will be deducted from your wallet.
+        <View style={styles.container}>
+            {/* Header Section matching Auth Style */}
+            <SafeAreaView style={styles.headerContainer}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={28} color={colors.card} />
+                </TouchableOpacity>
+                <View style={styles.headerTextSection}>
+                    <Text style={styles.headerTitle}>Add Funds</Text>
+                    <Text style={styles.headerSubtitle}>
+                        Contributing to {budgetName ? `"${budgetName}"` : 'Shared Budget'}
                     </Text>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Amount to Contribute</Text>
-                        <View style={styles.amountField}>
-                            <Text style={styles.currency}>$</Text>
-                            <TextInput
-                                style={styles.amountInput}
-                                placeholder="0.00"
-                                placeholderTextColor={colors.text.light}
-                                value={amount}
-                                onChangeText={(text) => {
-                                    // Allow only numbers and one decimal point
-                                    const cleaned = text.replace(/[^0-9.]/g, '');
-                                    const parts = cleaned.split('.');
-                                    if (parts.length > 2) return;
-                                    if (parts[1]?.length > 2) return;
-                                    setAmount(cleaned);
-                                }}
-                                keyboardType="decimal-pad"
-                                autoFocus
-                                editable={!loading}
-                            />
-                        </View>
-                    </View>
-
-                    <TouchableOpacity
-                        style={[
-                            styles.submitButton,
-                            (!amount.trim() || loading) && styles.submitButtonDisabled,
-                        ]}
-                        onPress={handleAddBudget}
-                        disabled={!amount.trim() || loading}
-                        activeOpacity={0.8}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#111" />
-                        ) : (
-                            <Text style={styles.submitButtonText}>Add Amount</Text>
-                        )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => setShowForm(false)}
-                    >
-                        <Text style={styles.backButtonText}>Cancel</Text>
-                    </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </SafeAreaView>
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <View style={styles.formSheet}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 40 }}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {/* Large Amount Display */}
+                        <View style={styles.inputWrapper}>
+                            <Text style={styles.inputLabel}>Contribution Amount</Text>
+                            <Animated.View style={[
+                                styles.amountField,
+                                {
+                                    borderColor: focusAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [colors.border, colors.primary],
+                                    })
+                                }
+                            ]}>
+                                <MaterialCommunityIcons name="currency-usd" size={32} color={colors.primary} />
+                                <TextInput
+                                    style={styles.amountInput}
+                                    placeholder="0.00"
+                                    placeholderTextColor="#A0A0A0"
+                                    value={formatAmount(amount)}
+                                    onChangeText={(text) => setAmount(formatAmount(text))}
+                                    keyboardType="decimal-pad"
+                                    autoFocus
+                                    editable={!loading}
+                                    onFocus={() => Animated.timing(focusAnim, { toValue: 1, duration: 200, useNativeDriver: false }).start()}
+                                    onBlur={() => Animated.timing(focusAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start()}
+                                />
+                            </Animated.View>
+                            <Text style={styles.hintText}>Funds will be deducted from your available wallet.</Text>
+                        </View>
+
+                        {/* Submit Button - Golden Style */}
+                        <TouchableOpacity
+                            style={[styles.submitButton, (!amount.trim() || loading) && { opacity: 0.7 }]}
+                            onPress={handleAddBudget}
+                            disabled={!amount.trim() || loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color={colors.secondary} />
+                            ) : (
+                                <Text style={styles.submitButtonText}>Confirm Contribution</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.cancelButton}
+                            onPress={() => router.back()}
+                            disabled={loading}
+                        >
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+                </View>
+            </KeyboardAvoidingView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFEF8',
+        backgroundColor: colors.secondary,
     },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        padding: spacing.lg,
+    headerContainer: {
+        paddingHorizontal: 25,
+        paddingTop: 20,
+        paddingBottom: 40,
     },
-    card: {
-        backgroundColor: '#ffffff',
-        borderRadius: borderRadius.xl,
-        padding: spacing.xl,
-        borderWidth: 1,
-        borderColor: '#FDE68A',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 6,
+    backButton: {
+        marginBottom: 10,
+        marginLeft: -5,
     },
-    header: {
-        alignItems: 'center',
-        marginBottom: spacing.lg,
+    headerTextSection: {
+        marginTop: 10,
     },
-    title: {
-        fontSize: fontSize.xxl,
-        fontWeight: fontWeight.bold,
-        color: '#111827',
-        marginTop: spacing.md,
+    headerTitle: {
+        fontSize: 32,
+        fontWeight: '700',
+        color: colors.card,
+        lineHeight: 40,
+        marginBottom: 8,
     },
-    subtitle: {
-        fontSize: fontSize.sm,
-        color: '#6B7280',
-        textAlign: 'center',
-        marginBottom: spacing.xl,
+    headerSubtitle: {
+        fontSize: 15,
+        color: colors.text.light,
         lineHeight: 22,
     },
-    inputContainer: {
-        marginBottom: spacing.xl,
+    formSheet: {
+        flex: 1,
+        backgroundColor: colors.card,
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+        paddingHorizontal: 25,
+        paddingTop: 40,
     },
-    label: {
-        fontSize: fontSize.md,
-        fontWeight: fontWeight.semibold,
-        color: '#374151',
-        marginBottom: spacing.sm,
+    inputWrapper: {
+        marginBottom: 35,
+    },
+    inputLabel: {
+        fontSize: 12,
+        color: colors.text.light,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 12,
+        fontWeight: '600',
     },
     amountField: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#FDE68A',
-        borderRadius: borderRadius.lg,
-        paddingHorizontal: spacing.md,
-    },
-    currency: {
-        fontSize: fontSize.xl,
-        fontWeight: fontWeight.bold,
-        color: colors.primary,
-        marginRight: spacing.sm,
+        borderBottomWidth: 2,
+        paddingVertical: 10,
     },
     amountInput: {
         flex: 1,
-        fontSize: fontSize.xl,
-        fontWeight: fontWeight.semibold,
-        color: '#111827',
-        paddingVertical: spacing.md,
+        fontSize: 42,
+        fontWeight: '700',
+        color: colors.text.primary,
+        padding: 0,
+        marginLeft: 5,
+    },
+    hintText: {
+        fontSize: 13,
+        color: colors.text.light,
+        marginTop: 15,
+        fontStyle: 'italic',
     },
     submitButton: {
-        backgroundColor: '#FACC15',
-        paddingVertical: spacing.lg,
-        borderRadius: borderRadius.xl,
+        backgroundColor: colors.primary,
+        borderRadius: 30,
+        height: 60,
+        justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    submitButtonDisabled: {
-        opacity: 0.6,
+        marginBottom: 15,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
     submitButtonText: {
-        fontSize: fontSize.lg,
-        fontWeight: fontWeight.bold,
-        color: '#111827',
+        color: colors.secondary,
+        fontSize: 18,
+        fontWeight: '700',
     },
-    backButton: {
+    cancelButton: {
+        height: 50,
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    backButtonText: {
-        color: '#6B7280',
-        fontSize: fontSize.md,
-        fontWeight: fontWeight.medium,
+    cancelButtonText: {
+        color: colors.text.light,
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

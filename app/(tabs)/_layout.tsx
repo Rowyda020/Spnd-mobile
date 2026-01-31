@@ -37,25 +37,25 @@ export default function TabsLayout() {
           ),
         }}
       />
-
-      {/* ANALYTICS */}
       <Tabs.Screen
-        name="analytics"
+        name="income"
         options={{
-          title: 'Analytics',
+          title: 'Income',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'stats-chart' : 'stats-chart-outline'}
+              name={focused ? 'cash' : 'cash-outline'}
               size={size}
               color={color}
             />
           ),
         }}
       />
+      {/* ANALYTICS */}
+
 
       {/* SHARED BUDGETS */}
       <Tabs.Screen
-        name="sharedbudget"          // ← no hyphen
+        name="sharedbudget"
         options={{
           title: 'Shared Budgets',
           tabBarIcon: ({ color, size }) => (
@@ -64,12 +64,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="income"
+        name="analytics"
         options={{
-          title: 'Income',
+          title: 'Analytics',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'cash' : 'cash-outline'}
+              name={focused ? 'stats-chart' : 'stats-chart-outline'}
               size={size}
               color={color}
             />
