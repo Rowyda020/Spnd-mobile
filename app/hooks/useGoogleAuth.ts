@@ -13,7 +13,6 @@ export const useGoogleAuth = () => {
 
   // For web/development
  const redirectUri = Platform.select({
-  web: 'http://localhost:8081',
   ios: 'Spnd://oauth/google/callback',
   android: 'Spnd://oauth/google/callback',
 });

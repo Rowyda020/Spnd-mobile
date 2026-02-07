@@ -19,13 +19,23 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.yourname.expensetracker"
     },
-    
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
       "@react-native-google-signin/google-signin"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "08c35783-c114-4897-bea1-e77e7cf6d277"
+      }
+    },
+    "android": {
+      "package": "com.spnd.app"
+    }
   }
 }
