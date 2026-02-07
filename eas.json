@@ -6,17 +6,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "npmInstallArgs": "--legacy-peer-deps"
-    },
+      "distribution": "internal"    },
     "preview": {
-      "distribution": "internal",
-      "npmInstallArgs": "--legacy-peer-deps"
-    },
+      "distribution": "internal"    },
     "production": {
-      "autoIncrement": true,
-      "npmInstallArgs": "--legacy-peer-deps"
-    }
+      "autoIncrement": true    }
   },
   "submit": {
     "production": {}
