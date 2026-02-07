@@ -1,11 +1,7 @@
 // useGoogleAuth.ts - Simplified version
 import { useState } from 'react';
-import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { Platform } from 'react-native';
-import { GOOGLE_WEB_CLIENT_ID } from '@/config/env';
-
-WebBrowser.maybeCompleteAuthSession();
 
 export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -18,7 +14,7 @@ export const useGoogleAuth = () => {
 });
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID,
+    // clientId: GOOGLE_WEB_CLIENT_ID,
     redirectUri,
     scopes: ['openid', 'profile', 'email'],
   });

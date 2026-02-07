@@ -14,13 +14,10 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Link, router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../context/AuthContext';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import authService from '@/services/auth.service';
 import { colors } from '../../constants/theme';
-
-WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
