@@ -4,7 +4,7 @@
        width="180" />
 </p>
 
-# 💰 Spnd Mobile - Smart Budget Tracking App
+# 💰 Spnd - Smart Budget Tracking App
 
 > The official **React Native** mobile client for Spnd – a modern expense & budget tracker. Built with **Expo SDK 54**, **Expo Router**, and **TypeScript** for iOS, Android, and (optional) web.
 
